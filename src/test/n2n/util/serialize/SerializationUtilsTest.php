@@ -3,25 +3,35 @@
 namespace n2n\util\serialize;
 
 use PHPUnit\Framework\TestCase;
-use n2n\util\serialize\mock\SerializableObjMock;
+use n2n\util\serialize\mock\SerializableScalarPropMock;
 use n2n\util\serialize\ex\UnserializationFailedException;
+use n2n\util\serialize\mock\SerializableObjPropMock;
 
 class SerializationUtilsTest extends TestCase {
+
+
 
 	/**
 	 * @throws UnserializationFailedException
 	 */
 	function testStrictObjSerialize() {
-		$m = new SerializableObjMock();
-		$m->boolProp = true;
-		$m->intProp = 1;
-		$m->floatProp = 1.1;
-		$m->strProp = 'foo';
-		$m->unionProp = null;
+		$m = SerializableScalarPropMock::create();
 
-		$str = SerializationUtils::strictObjSerialize($m, SerializableObjMock::class);
+		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
 
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjMock::class);
+		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableScalarPropMock::class);
 		$this->assertEquals($m, $unserializedM);
 	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjSerializeWrongType() {
+		$m = SerializableScalarPropMock::create();
+		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
+
+		$this->expectException(UnserializationFailedException::class);
+		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjPropMock::class);
+	}
+
 }
