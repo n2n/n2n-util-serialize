@@ -1,0 +1,13 @@
+<phpunit bootstrap="test/bootstrap.php"
+         convertWarningsToExceptions="false">
+    <coverage>
+        <include>
+            <directory suffix=".php">app</directory>
+        </include>
+    </coverage>
+    <testsuites>
+        <testsuite name="Global Test Suite">
+            <directory>test</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
