@@ -2,7 +2,7 @@
 
 namespace n2n\util\serialize\mock;
 
-class SerializableScalarPropMock {
+final class SerializableScalarPropMock {
 
 	public string $strProp;
 	public int $intProp;

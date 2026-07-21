@@ -2,7 +2,7 @@
 
 namespace n2n\util\serialize\mock;
 
-class SerializableObjPropHckMock {
+final class SerializableObjPropHckMock {
 
 	public string|SerializableObjPropMock $objProp;
 

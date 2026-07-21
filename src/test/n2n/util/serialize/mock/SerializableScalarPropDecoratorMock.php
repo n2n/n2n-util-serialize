@@ -2,6 +2,6 @@
 
 namespace n2n\util\serialize\mock;
 
-class SerializableScalarPropDecoratorMock {
+final class SerializableScalarPropDecoratorMock {
 	public SerializableScalarPropMock $scalarPropMock;
 }

@@ -2,7 +2,7 @@
 
 namespace n2n\util\serialize\mock;
 
-class UnserializableArrayPropMock {
+final class UnserializableArrayPropMock {
 
 	public ?array $arrayProp;
 
