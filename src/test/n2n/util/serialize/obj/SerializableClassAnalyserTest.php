@@ -11,6 +11,7 @@ use n2n\util\serialize\mock\SerializableScalarPropMock;
 use n2n\util\serialize\mock\SerializableScalarPropDecoratorMock;
 use n2n\util\serialize\mock\UnserializableSubSuperMagicMethodMock;
 use n2n\util\serialize\mock\UnserializableSubMixedPropMock;
+use n2n\util\serialize\mock\UnserializableUseTraitMixedPropMock;
 
 class SerializableClassAnalyserTest extends TestCase {
 
@@ -48,6 +49,17 @@ class SerializableClassAnalyserTest extends TestCase {
 		$this->expectException(ClassNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/mixedProp/');
 		SerializableClassAnalyser::createFromClass(UnserializableSubMixedPropMock::class)
+				->determineAllowedClassNames();
+	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testMixedTraitUnserializable(): void {
+		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/UnserializableUseTraitMixedPropMock/');
+		$this->expectExceptionMessageMatches('/mixedProp/');
+		SerializableClassAnalyser::createFromClass(UnserializableUseTraitMixedPropMock::class)
 				->determineAllowedClassNames();
 	}
 
