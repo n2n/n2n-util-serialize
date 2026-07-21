@@ -2,7 +2,7 @@
 
 namespace n2n\util\serialize\mock;
 
-class UnserializableMagicMethodMock {
+class UnserializableSuperMagicMethodMock {
 
 	function __wakeup() {
 
