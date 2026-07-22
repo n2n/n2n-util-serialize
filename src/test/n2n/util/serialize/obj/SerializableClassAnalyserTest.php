@@ -12,6 +12,8 @@ use n2n\util\serialize\mock\SerializableScalarPropDecoratorMock;
 use n2n\util\serialize\mock\UnserializableSubSuperMagicMethodMock;
 use n2n\util\serialize\mock\UnserializableSubMixedPropMock;
 use n2n\util\serialize\mock\UnserializableUseTraitMixedPropMock;
+use n2n\util\serialize\mock\UnserializableSerializableMock;
+use n2n\util\serialize\mock\UnserializableIntersectionPropMock;
 
 class SerializableClassAnalyserTest extends TestCase {
 
@@ -71,6 +73,27 @@ class SerializableClassAnalyserTest extends TestCase {
 		$this->expectException(ClassNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/__wakeup/');
 		SerializableClassAnalyser::createFromClass(UnserializableSubSuperMagicMethodMock::class)
+				->determineAllowedClassNames();
+	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testSerializableInterfaceUnserializable(): void {
+		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/not implement Serializable/');
+		SerializableClassAnalyser::createFromClass(UnserializableSerializableMock::class)
+				->determineAllowedClassNames();
+	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testIntersectionTypeUnserializable(): void {
+		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/intersectionProp/');
+		$this->expectExceptionMessageMatches('/Type is not supported./');
+		SerializableClassAnalyser::createFromClass(UnserializableIntersectionPropMock::class)
 				->determineAllowedClassNames();
 	}
 
