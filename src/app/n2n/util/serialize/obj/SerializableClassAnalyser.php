@@ -26,6 +26,7 @@ use n2n\util\type\TypeName;
  * ensuring that the target class structure is valid (e.g., constructor arguments are optional).
  */
 class SerializableClassAnalyser {
+	private bool $enum;
 
 	/**
 	 * @throws TypeNotSupportedForSerializationException

@@ -69,6 +69,9 @@ class SerializationUtilsTest extends TestCase {
 
 		$ser = SerializationUtils::strictSerialize(3, 'int');
 		$this->assertSame(3, SerializationUtils::strictUnserialize($ser, 'int'));
+
+		$ser = SerializationUtils::strictSerialize(1.0, 'float');
+		$this->assertSame(1.0, SerializationUtils::strictUnserialize($ser, 'float'));
 	}
 
 	function testStrictObjSerializeWrongScalarType() {

@@ -101,6 +101,8 @@ class SerializationUtils {
 			return false;
 		}
 
+		$options['max_depth'] ??= self::DEFAULT_MAX_DEPTH;
+
 		try {
 			$obj = unserialize($serializedStr, $options);
 		} catch (\Throwable $e) {
@@ -125,12 +127,12 @@ class SerializationUtils {
 	 *
 	 * @param mixed $data the object to serialize
 	 * @param class-string|\ReflectionClass $typeName the root class describing the expected type
-	 * @return string|null the serialized string, or `null` if {@see serialize()} produces no output
+	 * @return string the serialized string, or `null` if {@see serialize()} produces no output
 	 *
 	 * @throws \InvalidArgumentException if `$class` (or any reachable property type) is not supported for
 	 *         serialization, or if `$obj` is not of the exact class described by `$class`
 	 */
-	static function strictSerialize(mixed $data, string $typeName): ?string {
+	static function strictSerialize(mixed $data, string $typeName): string {
 		try {
 			return self::checkedStrictSerialize($data, $typeName);
 		} catch (TypeNotSupportedForSerializationException $e) {
@@ -156,7 +158,7 @@ class SerializationUtils {
 		if (TypeName::isScalar($typeName) || TypeName::NULL === $typeName) {
 			ArgUtils::valType($data, $typeName);
 			try {
-				return StringUtils::jsonEncode($data);
+				return StringUtils::jsonEncode($data, JSON_PRESERVE_ZERO_FRACTION);
 			} catch (JsonEncodeFailedException $e) {
 				throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 			}
@@ -171,7 +173,7 @@ class SerializationUtils {
 		$analyzer->determineAllowedClassNames(new AllowedClassNameCollection());
 
 		if ($analyzer->class->getName() !== get_class($data)) {
-			throw new \InvalidArgumentException('Passed object must be exact type ' . $typeName->getName()
+			throw new \InvalidArgumentException('Passed object must be exact type ' . $typeName
 					. '. Given: ' . get_class($data));
 		}
 
