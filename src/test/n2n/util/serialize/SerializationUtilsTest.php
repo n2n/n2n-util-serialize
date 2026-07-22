@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 use n2n\util\serialize\mock\SerializableScalarPropMock;
 use n2n\util\serialize\ex\UnserializationFailedException;
 use n2n\util\serialize\mock\SerializableObjPropMock;
-use n2n\util\serialize\mock\SerializableObjPropHckMock;
+use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
 
 class SerializationUtilsTest extends TestCase {
 
@@ -59,4 +59,46 @@ class SerializationUtilsTest extends TestCase {
 		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableObjPropMock::class);
 	}
 
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjSerializeScalar() {
+
+		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
+		$this->assertSame('holeradio', SerializationUtils::strictUnserialize($ser, 'string'));
+
+		$ser = SerializationUtils::strictSerialize(3, 'int');
+		$this->assertSame(3, SerializationUtils::strictUnserialize($ser, 'int'));
+	}
+
+	function testStrictObjSerializeWrongScalarType() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/must be of type int, string given/');
+		$ser = SerializationUtils::strictSerialize('holeradio', 'int');
+	}
+
+	function testStrictObjSerializeWrongScalar() {
+		$this->expectException(TypeNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
+		$ser = SerializationUtils::checkedStrictSerialize([], 'array');
+	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjUnserializeWrongScalarType() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/Unserialized string must be of type int/');
+		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
+		SerializationUtils::strictUnserialize($ser, 'int');
+	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjUnserializeWrongScalar() {
+		$this->expectException(TypeNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
+		$ser = SerializationUtils::checkedStrictUnserialize(serialize('[]'), 'array');
+	}
 }

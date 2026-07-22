@@ -15,7 +15,7 @@
  */
 namespace n2n\util\serialize\obj;
 
-use n2n\util\serialize\ex\ClassNotSupportedForSerializationException;
+use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
 use ReflectionClass;
 use n2n\util\ex\ExUtils;
 use n2n\util\type\TypeUtils;
@@ -28,7 +28,7 @@ use n2n\util\type\TypeName;
 class SerializableClassAnalyser {
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function __construct(readonly \ReflectionClass $class, private bool $parentMode) {
 		$this->validateClass($class);
@@ -37,21 +37,21 @@ class SerializableClassAnalyser {
 
 	/**
 	 * Internal helper method to simulate checking for non-optional constructors.
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	private function validateClass(\ReflectionClass $class): void {
 		if ($class->isInterface() || $class->isTrait()) {
-			throw new ClassNotSupportedForSerializationException($class->getName()
+			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Type must be a class.');
 		}
 
 		if ($class->isAbstract()) {
-			throw new ClassNotSupportedForSerializationException($class->getName()
+			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Class must not be abstract.');
 		}
 
 		if (!$this->parentMode && !$class->isFinal()) {
-			throw new ClassNotSupportedForSerializationException($class->getName()
+			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Class must be final.');
 		}
 
@@ -60,7 +60,7 @@ class SerializableClassAnalyser {
 				|| $class->hasMethod('serialize') || $class->hasMethod('unserialize')
 				|| $class->hasMethod('__destruct')
 				|| $class->hasMethod('__set') || $class->hasMethod('__get')) {
-			throw new ClassNotSupportedForSerializationException($class->getName()
+			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Class must not contain any method which could affect the'
 					. ' serialization/unserialzation process like:'
 					. ' __sleep(), __wakeup(), __serialize(), __unserialize(), serialize(), unserialize(), __destruct()'
@@ -73,7 +73,7 @@ class SerializableClassAnalyser {
 	 * to the given {@see AllowedClassNameCollection}. The collection itself breaks cycles arising from self-
 	 * referential or mutually recursive property types (e.g. `public ?Node $parent`).
 	 *
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function determineAllowedClassNames(AllowedClassNameCollection $collection): void {
 		$className = $this->class->getName();
@@ -105,9 +105,9 @@ class SerializableClassAnalyser {
 					continue;
 				}
 
-				throw new ClassNotSupportedForSerializationException('Type is not supported.');
-			} catch (ClassNotSupportedForSerializationException $e) {
-				throw new ClassNotSupportedForSerializationException('Property '
+				throw new TypeNotSupportedForSerializationException('Type is not supported.');
+			} catch (TypeNotSupportedForSerializationException $e) {
+				throw new TypeNotSupportedForSerializationException('Property '
 								. TypeUtils::prettyReflPropName($property) . ' not serializable. Reason: ' . $e->getMessage(),
 						previous: $e);
 			}
@@ -115,7 +115,7 @@ class SerializableClassAnalyser {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	private function extractAllowedClassNamesFromNamedType(\ReflectionProperty $property, \ReflectionNamedType $type,
 			AllowedClassNameCollection $collection): void {
@@ -125,7 +125,7 @@ class SerializableClassAnalyser {
 		}
 
 		if ($type->isBuiltin()) {
-			throw new ClassNotSupportedForSerializationException('Type is not supported for serialization '
+			throw new TypeNotSupportedForSerializationException('Type is not supported for serialization '
 					. $type->getName());
 		}
 
@@ -135,14 +135,14 @@ class SerializableClassAnalyser {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	public static function createFromObj(object $obj): SerializableClassAnalyser {
 		return self::createFromClass(new ReflectionClass($obj));
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	public static function createFromClass(string|\ReflectionClass $class): SerializableClassAnalyser {
 		if (is_string($class)) {

@@ -19,12 +19,13 @@ namespace n2n\util\serialize;
 use n2n\util\serialize\ex\UnserializationFailedException;
 use n2n\util\serialize\obj\SerializableClassAnalyser;
 use n2n\util\serialize\obj\AllowedClassNameCollection;
-use n2n\util\serialize\ex\ClassNotSupportedForSerializationException;
+use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
 use n2n\util\type\TypeUtils;
 use n2n\util\type\TypeName;
 use n2n\util\StringUtils;
 use n2n\util\type\ArgUtils;
 use n2n\util\JsonEncodeFailedException;
+use n2n\util\JsonDecodeFailedException;
 
 /**
  * Helpers around PHP's native {@see serialize()}/{@see unserialize()} that make (un)serializing plain data
@@ -122,57 +123,59 @@ class SerializationUtils {
 	 * `$obj` must be of the exact class described by `$class` (subclasses are not accepted); otherwise an
 	 * {@see \InvalidArgumentException} is thrown.
 	 *
-	 * @param object $obj the object to serialize
-	 * @param class-string|\ReflectionClass $class the root class describing the expected type
+	 * @param mixed $data the object to serialize
+	 * @param class-string|\ReflectionClass $typeName the root class describing the expected type
 	 * @return string|null the serialized string, or `null` if {@see serialize()} produces no output
 	 *
 	 * @throws \InvalidArgumentException if `$class` (or any reachable property type) is not supported for
 	 *         serialization, or if `$obj` is not of the exact class described by `$class`
 	 */
-	static function strictSerialize(object $obj, string|\ReflectionClass $class): ?string {
+	static function strictSerialize(mixed $data, string $typeName): ?string {
 		try {
-			return self::checkedStrictSerialize($obj, $class);
-		} catch (ClassNotSupportedForSerializationException $e) {
+			return self::checkedStrictSerialize($data, $typeName);
+		} catch (TypeNotSupportedForSerializationException $e) {
 			throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 		}
 	}
 
 	/**
 	 * Same as {@see self::strictSerialize()} but throws checked exception
-	 * {@see ClassNotSupportedForSerializationException} instead of wrapping it in an
+	 * {@see TypeNotSupportedForSerializationException} instead of wrapping it in an
 	 * {@see \InvalidArgumentException}.
 	 *
-	 * @param object $obj the object to serialize
-	 * @param class-string|\ReflectionClass $class the root class describing the expected type
+	 * @template T
+	 * @param T $data the object to serialize
+	 * @param class-string<T> $typeName the root class describing the expected type
 	 * @return string the serialized string, or `null` if {@see serialize()} produces no output
 	 *
-	 * @throws ClassNotSupportedForSerializationException if `$class` (or any reachable property type) is not
+	 * @throws TypeNotSupportedForSerializationException if `$class` (or any reachable property type) is not
 	 *         supported for serialization
 	 * @throws \InvalidArgumentException if `$obj` is not of the exact class described by `$class`
 	 */
-	static function checkedStrictSerialize(mixed $obj, string|\ReflectionClass $class): string {
-		if (TypeName::isScalar($class) || TypeName::NULL === $class) {
-			ArgUtils::valType($obj, $class);
+	static function checkedStrictSerialize(mixed $data, string $typeName): string {
+		if (TypeName::isScalar($typeName) || TypeName::NULL === $typeName) {
+			ArgUtils::valType($data, $typeName);
 			try {
-				return StringUtils::jsonEncode($obj);
+				return StringUtils::jsonEncode($data);
 			} catch (JsonEncodeFailedException $e) {
 				throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 			}
 		}
 
-		if (TypeName::isBuiltin($class)) {
-			throw new ClassNotSupportedForSerializationException($class);
+		if (TypeName::isBuiltin($typeName)) {
+			throw new TypeNotSupportedForSerializationException('Type not supported for serialization: ' .
+					$typeName);
 		}
 
-		$analyzer = SerializableClassAnalyser::createFromClass($class);
+		$analyzer = SerializableClassAnalyser::createFromClass($typeName);
 		$analyzer->determineAllowedClassNames(new AllowedClassNameCollection());
 
-		if ($analyzer->class->getName() !== get_class($obj)) {
-			throw new \InvalidArgumentException('Passed object must be exact type ' . $class->getName()
-					. '. Given: ' . get_class($obj));
+		if ($analyzer->class->getName() !== get_class($data)) {
+			throw new \InvalidArgumentException('Passed object must be exact type ' . $typeName->getName()
+					. '. Given: ' . get_class($data));
 		}
 
-		return serialize($obj);
+		return serialize($data);
 	}
 
 	/**
@@ -188,7 +191,7 @@ class SerializationUtils {
 	 *
 	 * @template T
 	 * @param string $data the serialized string, typically produced by {@see self::strictSerialize()}
-	 * @param class-string<T>|\ReflectionClass $class the root class describing the expected type
+	 * @param class-string<T> $typeName the root class describing the expected type
 	 * @return T the unserialized object of class `$class`
 	 *
 	 * @throws \InvalidArgumentException if `$class` (or any reachable property type) is not supported for
@@ -196,31 +199,51 @@ class SerializationUtils {
 	 * @throws UnserializationFailedException if `$data` is not a valid serialized value, does not represent an
 	 *         object, or represents an object of a class other than `$class`
 	 */
-	static function strictUnserialize(string $data, string|\ReflectionClass $class): mixed {
+	static function strictUnserialize(string $data, string $typeName): mixed {
 		try {
-			return self::checkedStrictUnserialize($data, $class);
-		} catch (ClassNotSupportedForSerializationException $e) {
+			return self::checkedStrictUnserialize($data, $typeName);
+		} catch (TypeNotSupportedForSerializationException $e) {
 			throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 		}
 	}
 
 	/**
 	 *  Same as {@see self::strictUnserialize()} but throws checked exception
-	 *  {@see ClassNotSupportedForSerializationException} instead of wrapping it in an
+	 *  {@see TypeNotSupportedForSerializationException} instead of wrapping it in an
 	 *  {@see \InvalidArgumentException}.
 	 *
 	 * @template T
 	 * @param string $data the serialized string
-	 * @param class-string<T>|\ReflectionClass $class the root class describing the expected type
+	 * @param class-string<T> $typeName the root class describing the expected type
 	 * @return T the unserialized object of class `$class`
 	 *
-	 * @throws ClassNotSupportedForSerializationException if `$class` (or any reachable property type) is not
+	 * @throws TypeNotSupportedForSerializationException if `$class` (or any reachable property type) is not
 	 *         supported for serialization
 	 * @throws UnserializationFailedException if `$data` is not a valid serialized value, does not represent an
 	 *         object, or represents an object of a class other than `$class`
 	 */
-	private static function checkedStrictUnserialize(string $data, string|\ReflectionClass $class): mixed {
-		$analyzer = SerializableClassAnalyser::createFromClass($class);
+	static function checkedStrictUnserialize(string $data, string $typeName): mixed {
+		if (TypeName::isScalar($typeName) || TypeName::NULL === $typeName) {
+			try {
+				$result = StringUtils::jsonDecode($data);
+			} catch (JsonDecodeFailedException $e) {
+				throw new \InvalidArgumentException($e->getMessage(), previous: $e);
+			}
+
+			if (!TypeName::isValueA($result, $typeName)) {
+				throw new \InvalidArgumentException('Unserialized string must be of type ' . $typeName
+						. '. Given: ' . TypeUtils::getTypeInfo($result));
+			}
+
+			return $result;
+		}
+
+		if (TypeName::isBuiltin($typeName)) {
+			throw new TypeNotSupportedForSerializationException('Type not supported for serialization: ' .
+					$typeName);
+		}
+
+		$analyzer = SerializableClassAnalyser::createFromClass($typeName);
 		$allowedClassNameCollection = new AllowedClassNameCollection();
 		$analyzer->determineAllowedClassNames($allowedClassNameCollection);
 		$obj = self::unserialize($data, ['allowed_classes' => $allowedClassNameCollection->toArray()]);
