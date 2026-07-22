@@ -27,6 +27,9 @@ use n2n\util\serialize\mock\UnserializableSubMixedPropMock;
 use n2n\util\serialize\mock\UnserializableUseTraitMixedPropMock;
 use n2n\util\serialize\mock\UnserializableSerializableMock;
 use n2n\util\serialize\mock\UnserializableIntersectionPropMock;
+use n2n\util\serialize\mock\SerializableEnumPropMock;
+use n2n\util\serialize\mock\SerializableEnumMock;
+use n2n\util\serialize\mock\SerializableRecursivePropMock;
 
 class SerializableClassAnalyserTest extends TestCase {
 
@@ -130,4 +133,36 @@ class SerializableClassAnalyserTest extends TestCase {
 		$this->assertSame([SerializableScalarPropDecoratorMock::class, SerializableScalarPropMock::class],
 				$collection->toArray());
 	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testEnumSerializable(): void {
+		$collection = new AllowedClassNameCollection();
+		SerializableClassAnalyser::createFromClass(SerializableEnumMock::class)
+				->determineAllowedClassNames($collection);
+		$this->assertSame([SerializableEnumMock::class], $collection->toArray());
+	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testEnumPropSerializable(): void {
+		$collection = new AllowedClassNameCollection();
+		SerializableClassAnalyser::createFromClass(SerializableEnumPropMock::class)
+				->determineAllowedClassNames($collection);
+		$this->assertSame([SerializableEnumPropMock::class], $collection->toArray());
+	}
+
+	/**
+	 * @throws ClassNotSupportedForSerializationException
+	 */
+	function testRecursivePropSerializable(): void {
+		$collection = new AllowedClassNameCollection();
+		SerializableClassAnalyser::createFromClass(SerializableRecursivePropMock::class)
+				->determineAllowedClassNames($collection);
+		$this->assertSame([SerializableRecursivePropMock::class], $collection->toArray());
+	}
+
+
 }

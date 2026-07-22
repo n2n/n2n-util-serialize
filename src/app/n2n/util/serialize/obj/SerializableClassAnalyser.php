@@ -32,6 +32,7 @@ class SerializableClassAnalyser {
 	 */
 	function __construct(readonly \ReflectionClass $class, private bool $parentMode) {
 		$this->validateClass($class);
+		$this->enum = $class->isEnum();
 	}
 
 	/**
@@ -42,11 +43,6 @@ class SerializableClassAnalyser {
 		if ($class->isInterface() || $class->isTrait()) {
 			throw new ClassNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Type must be a class.');
-		}
-
-		if ($class->isEnum()) {
-			throw new ClassNotSupportedForSerializationException($class->getName()
-					. ' not supported for serialization. Enums are not supported.');
 		}
 
 		if ($class->isAbstract()) {
@@ -85,6 +81,10 @@ class SerializableClassAnalyser {
 			return;
 		}
 		$collection->add($className);
+
+		if ($this->enum) {
+			return;
+		}
 
 		if (false !== ($parentClass = $this->class->getParentClass())) {
 			(new SerializableClassAnalyser($parentClass, true))->determineAllowedClassNames($collection);
