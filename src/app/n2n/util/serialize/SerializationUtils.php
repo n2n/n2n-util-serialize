@@ -21,12 +21,16 @@ use n2n\util\serialize\obj\SerializableClassAnalyser;
 use n2n\util\serialize\obj\AllowedClassNameCollection;
 use n2n\util\serialize\ex\ClassNotSupportedForSerializationException;
 use n2n\util\type\TypeUtils;
+use n2n\util\type\TypeName;
+use n2n\util\StringUtils;
+use n2n\util\type\ArgUtils;
+use n2n\util\JsonEncodeFailedException;
 
 /**
  * Helpers around PHP's native {@see serialize()}/{@see unserialize()} that make (un)serializing plain data
  * objects safe against object-injection / POP-chain attacks.
  *
- * The strict variants {@see self::strictObjSerialize()} and {@see self::strictObjUnserialize()} are built
+ * The strict variants {@see self::strictSerialize()} and {@see self::strictUnserialize()} are built
  * around a {@see SerializableClassAnalyser} which validates the structure of the passed root `$class` and
  * transitively of every class reachable through its object-typed properties. A class is considered safe only
  * if it is:
@@ -55,7 +59,7 @@ class SerializationUtils {
 	const SER_FALSE = 'b:0;';
 
 	/**
-	 * Default maximum nesting depth enforced by {@see self::strictObjUnserialize()} (and available to
+	 * Default maximum nesting depth enforced by {@see self::strictUnserialize()} (and available to
 	 * {@see self::unserialize()} via the `max_depth` option). PHP's native {@see unserialize()} has no depth
 	 * limit, so a crafted payload with extreme `a:`/`O:` nesting can exhaust memory or segfault the C stack
 	 * before a typed-property mismatch rejects it. 50 is generous for ordinary data-object graphs (whose depth
@@ -72,7 +76,7 @@ class SerializationUtils {
 	 * caller never has to inspect {@see error_get_last()}.
 	 *
 	 * No `allowed_classes` restriction is applied unless one is supplied through `$options`; for unserializing
-	 * untrusted data prefer {@see self::strictObjUnserialize()}.
+	 * untrusted data prefer {@see self::strictUnserialize()}.
 	 *
 	 * Recognized `$options` keys:
 	 *  - `allowed_classes` (bool|string[]): forwarded to {@see unserialize()}.
@@ -113,7 +117,7 @@ class SerializationUtils {
 	 * Serializes `$obj` only if its class — and transitively every class reachable through its object-typed
 	 * properties — is supported for (un)serialization according to {@see SerializableClassAnalyser} (see the
 	 * class docs for the rules). This guarantees the result can later be fed back to
-	 * {@see self::strictObjUnserialize()} with the same `$class` without enabling object-injection attacks.
+	 * {@see self::strictUnserialize()} with the same `$class` without enabling object-injection attacks.
 	 *
 	 * `$obj` must be of the exact class described by `$class` (subclasses are not accepted); otherwise an
 	 * {@see \InvalidArgumentException} is thrown.
@@ -125,29 +129,41 @@ class SerializationUtils {
 	 * @throws \InvalidArgumentException if `$class` (or any reachable property type) is not supported for
 	 *         serialization, or if `$obj` is not of the exact class described by `$class`
 	 */
-	static function strictObjSerialize(object $obj, string|\ReflectionClass $class): ?string {
+	static function strictSerialize(object $obj, string|\ReflectionClass $class): ?string {
 		try {
-			return self::checkedStrictObjSerialize($obj, $class);
+			return self::checkedStrictSerialize($obj, $class);
 		} catch (ClassNotSupportedForSerializationException $e) {
 			throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 		}
 	}
 
 	/**
-	 * Same as {@see self::strictObjSerialize()} but throws checked exception
+	 * Same as {@see self::strictSerialize()} but throws checked exception
 	 * {@see ClassNotSupportedForSerializationException} instead of wrapping it in an
 	 * {@see \InvalidArgumentException}.
 	 *
-	 * @template T
 	 * @param object $obj the object to serialize
-	 * @param class-string<T>|\ReflectionClass $class the root class describing the expected type
-	 * @return T the serialized string, or `null` if {@see serialize()} produces no output
+	 * @param class-string|\ReflectionClass $class the root class describing the expected type
+	 * @return string the serialized string, or `null` if {@see serialize()} produces no output
 	 *
 	 * @throws ClassNotSupportedForSerializationException if `$class` (or any reachable property type) is not
 	 *         supported for serialization
 	 * @throws \InvalidArgumentException if `$obj` is not of the exact class described by `$class`
 	 */
-	static function checkedStrictObjSerialize(object $obj, string|\ReflectionClass $class): mixed {
+	static function checkedStrictSerialize(mixed $obj, string|\ReflectionClass $class): string {
+		if (TypeName::isScalar($class) || TypeName::NULL === $class) {
+			ArgUtils::valType($obj, $class);
+			try {
+				return StringUtils::jsonEncode($obj);
+			} catch (JsonEncodeFailedException $e) {
+				throw new \InvalidArgumentException($e->getMessage(), previous: $e);
+			}
+		}
+
+		if (TypeName::isBuiltin($class)) {
+			throw new ClassNotSupportedForSerializationException($class);
+		}
+
 		$analyzer = SerializableClassAnalyser::createFromClass($class);
 		$analyzer->determineAllowedClassNames(new AllowedClassNameCollection());
 
@@ -167,11 +183,11 @@ class SerializationUtils {
 	 * to `__PHP_Incomplete_Class` and PHP's typed-property enforcement constrains every property to its declared
 	 * type. The returned value is then verified to be an object of exactly `$class`.
 	 *
-	 * This is the counterpart to {@see self::strictObjSerialize()}: a string produced by `strictObjSerialize()`
+	 * This is the counterpart to {@see self::strictSerialize()}: a string produced by `strictObjSerialize()`
 	 * with a given `$class` round-trips back through `strictObjUnserialize()` with the same `$class`.
 	 *
 	 * @template T
-	 * @param string $data the serialized string, typically produced by {@see self::strictObjSerialize()}
+	 * @param string $data the serialized string, typically produced by {@see self::strictSerialize()}
 	 * @param class-string<T>|\ReflectionClass $class the root class describing the expected type
 	 * @return T the unserialized object of class `$class`
 	 *
@@ -180,16 +196,16 @@ class SerializationUtils {
 	 * @throws UnserializationFailedException if `$data` is not a valid serialized value, does not represent an
 	 *         object, or represents an object of a class other than `$class`
 	 */
-	static function strictObjUnserialize(string $data, string|\ReflectionClass $class): mixed {
+	static function strictUnserialize(string $data, string|\ReflectionClass $class): mixed {
 		try {
-			return self::checkedStrictObjUnserialize($data, $class);
+			return self::checkedStrictUnserialize($data, $class);
 		} catch (ClassNotSupportedForSerializationException $e) {
 			throw new \InvalidArgumentException($e->getMessage(), previous: $e);
 		}
 	}
 
 	/**
-	 *  Same as {@see self::strictObjUnserialize()} but throws checked exception
+	 *  Same as {@see self::strictUnserialize()} but throws checked exception
 	 *  {@see ClassNotSupportedForSerializationException} instead of wrapping it in an
 	 *  {@see \InvalidArgumentException}.
 	 *
@@ -203,7 +219,7 @@ class SerializationUtils {
 	 * @throws UnserializationFailedException if `$data` is not a valid serialized value, does not represent an
 	 *         object, or represents an object of a class other than `$class`
 	 */
-	private static function checkedStrictObjUnserialize(string $data, string|\ReflectionClass $class): mixed {
+	private static function checkedStrictUnserialize(string $data, string|\ReflectionClass $class): mixed {
 		$analyzer = SerializableClassAnalyser::createFromClass($class);
 		$allowedClassNameCollection = new AllowedClassNameCollection();
 		$analyzer->determineAllowedClassNames($allowedClassNameCollection);

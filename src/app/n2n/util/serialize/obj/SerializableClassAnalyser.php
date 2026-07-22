@@ -62,11 +62,13 @@ class SerializableClassAnalyser {
 		if ($class->hasMethod('__sleep') || $class->hasMethod('__wakeup')
 				|| $class->hasMethod('__serialize') || $class->hasMethod('__unserialize')
 				|| $class->hasMethod('serialize') || $class->hasMethod('unserialize')
-				|| $class->hasMethod('__destruct')) {
+				|| $class->hasMethod('__destruct')
+				|| $class->hasMethod('__set') || $class->hasMethod('__get')) {
 			throw new ClassNotSupportedForSerializationException($class->getName()
-					. ' not supported for serialization. Class must not contain any method which could be called '
-					. ' during serialization/unserialzation process like:'
-					. ' __sleep(), __wakeup(), __serialize(), __unserialize(), serialize(), unserialize(), __destruct());');
+					. ' not supported for serialization. Class must not contain any method which could affect the'
+					. ' serialization/unserialzation process like:'
+					. ' __sleep(), __wakeup(), __serialize(), __unserialize(), serialize(), unserialize(), __destruct()'
+					. ', __set(), __get()');
 		}
 	}
 

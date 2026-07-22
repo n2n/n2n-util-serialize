@@ -85,12 +85,12 @@ $invoice->previous = null;
 
 // Serialize (throws InvalidArgumentException if the class is not supported,
 // or if $invoice is not of the exact class passed as the second argument).
-$serialized = SerializationUtils::strictObjSerialize($invoice, Invoice::class);
+$serialized = SerializationUtils::strictSerialize($invoice, Invoice::class);
 
 // ... store $serialized wherever you like ...
 
 try {
-    $restored = SerializationUtils::strictObjUnserialize($serialized, Invoice::class);
+    $restored = SerializationUtils::strictUnserialize($serialized, Invoice::class);
     // $restored is guaranteed to be an Invoice of the exact expected class.
 } catch (UnserializationFailedException $e) {
     // $serialized was malformed, not an object, of the wrong class,

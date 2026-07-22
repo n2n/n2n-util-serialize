@@ -31,9 +31,9 @@ class SerializationUtilsTest extends TestCase {
 	function testStrictObjSerialize() {
 		$m = SerializableScalarPropMock::create();
 
-		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
+		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
 
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableScalarPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableScalarPropMock::class);
 		$this->assertEquals($m, $unserializedM);
 	}
 
@@ -42,10 +42,10 @@ class SerializationUtilsTest extends TestCase {
 	 */
 	function testStrictObjSerializeWrongType() {
 		$m = SerializableScalarPropMock::create();
-		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
+		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
 
 		$this->expectException(UnserializationFailedException::class);
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableObjPropMock::class);
 	}
 
 
@@ -56,7 +56,7 @@ class SerializationUtilsTest extends TestCase {
 		$str = 'O:47:"n2n\util\serialize\mock\SerializableObjPropMock":1:{s:7:"objProp";s:3:"hck";}';
 
 		$this->expectException(UnserializationFailedException::class);
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableObjPropMock::class);
 	}
 
 }
