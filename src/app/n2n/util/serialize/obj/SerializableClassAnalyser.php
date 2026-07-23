@@ -46,7 +46,7 @@ class SerializableClassAnalyser {
 					. ' not supported for serialization. Type must be a class.');
 		}
 
-		if ($class->isAbstract()) {
+		if (!$this->parentMode && $class->isAbstract()) {
 			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Class must not be abstract.');
 		}
