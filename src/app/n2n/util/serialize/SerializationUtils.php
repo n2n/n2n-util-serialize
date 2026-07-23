@@ -252,7 +252,7 @@ class SerializationUtils {
 			try {
 				$result = StringUtils::jsonDecode($data);
 			} catch (JsonDecodeFailedException $e) {
-				throw new \InvalidArgumentException($e->getMessage(), previous: $e);
+				throw new UnserializationFailedException($e->getMessage(), previous: $e);
 			}
 
 			if (!TypeName::isValueA($result, $typeName)) {
