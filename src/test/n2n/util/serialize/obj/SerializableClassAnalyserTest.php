@@ -17,7 +17,7 @@ namespace n2n\util\serialize\obj;
 
 use PHPUnit\Framework\TestCase;
 use n2n\util\serialize\mock\UnserializableArrayPropMock;
-use n2n\util\serialize\ex\ClassNotSupportedForSerializationException;
+use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
 use n2n\util\serialize\mock\UnserializableArrayPropDecoratorMock;
 use n2n\util\serialize\mock\UnserializableMixedPropMock;
 use n2n\util\serialize\mock\SerializableScalarPropMock;
@@ -34,47 +34,47 @@ use n2n\util\serialize\mock\SerializableRecursivePropMock;
 class SerializableClassAnalyserTest extends TestCase {
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testArrayUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		SerializableClassAnalyser::createFromClass(UnserializableArrayPropMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testSecondLevelUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		SerializableClassAnalyser::createFromClass(UnserializableArrayPropDecoratorMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testMixedUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		SerializableClassAnalyser::createFromClass(UnserializableMixedPropMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testMixedInheritanceUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/mixedProp/');
 		SerializableClassAnalyser::createFromClass(UnserializableSubMixedPropMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testMixedTraitUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/UnserializableUseTraitMixedPropMock/');
 		$this->expectExceptionMessageMatches('/mixedProp/');
 		SerializableClassAnalyser::createFromClass(UnserializableUseTraitMixedPropMock::class)
@@ -83,30 +83,30 @@ class SerializableClassAnalyserTest extends TestCase {
 
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testMagicMethodUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/__wakeup/');
 		SerializableClassAnalyser::createFromClass(UnserializableSubSuperMagicMethodMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testSerializableInterfaceUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/serialize\(\), unserialize\(\)/');
 		SerializableClassAnalyser::createFromClass(UnserializableSerializableMock::class)
 				->determineAllowedClassNames(new AllowedClassNameCollection());
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testIntersectionTypeUnserializable(): void {
-		$this->expectException(ClassNotSupportedForSerializationException::class);
+		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/intersectionProp/');
 		$this->expectExceptionMessageMatches('/Type is not supported./');
 		SerializableClassAnalyser::createFromClass(UnserializableIntersectionPropMock::class)
@@ -114,7 +114,7 @@ class SerializableClassAnalyserTest extends TestCase {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testScalarSerializable(): void {
 		$collection = new AllowedClassNameCollection();
@@ -124,7 +124,7 @@ class SerializableClassAnalyserTest extends TestCase {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testSecondLevelScalarSerializable(): void {
 		$collection = new AllowedClassNameCollection();
@@ -135,7 +135,7 @@ class SerializableClassAnalyserTest extends TestCase {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testEnumSerializable(): void {
 		$collection = new AllowedClassNameCollection();
@@ -145,7 +145,7 @@ class SerializableClassAnalyserTest extends TestCase {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testEnumPropSerializable(): void {
 		$collection = new AllowedClassNameCollection();
@@ -155,7 +155,7 @@ class SerializableClassAnalyserTest extends TestCase {
 	}
 
 	/**
-	 * @throws ClassNotSupportedForSerializationException
+	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function testRecursivePropSerializable(): void {
 		$collection = new AllowedClassNameCollection();

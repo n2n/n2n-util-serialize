@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 use n2n\util\serialize\mock\SerializableScalarPropMock;
 use n2n\util\serialize\ex\UnserializationFailedException;
 use n2n\util\serialize\mock\SerializableObjPropMock;
-use n2n\util\serialize\mock\SerializableObjPropHckMock;
+use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
 
 class SerializationUtilsTest extends TestCase {
 
@@ -31,9 +31,9 @@ class SerializationUtilsTest extends TestCase {
 	function testStrictObjSerialize() {
 		$m = SerializableScalarPropMock::create();
 
-		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
+		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
 
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableScalarPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableScalarPropMock::class);
 		$this->assertEquals($m, $unserializedM);
 	}
 
@@ -42,10 +42,10 @@ class SerializationUtilsTest extends TestCase {
 	 */
 	function testStrictObjSerializeWrongType() {
 		$m = SerializableScalarPropMock::create();
-		$str = SerializationUtils::strictObjSerialize($m, SerializableScalarPropMock::class);
+		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
 
 		$this->expectException(UnserializationFailedException::class);
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableObjPropMock::class);
 	}
 
 
@@ -56,7 +56,52 @@ class SerializationUtilsTest extends TestCase {
 		$str = 'O:47:"n2n\util\serialize\mock\SerializableObjPropMock":1:{s:7:"objProp";s:3:"hck";}';
 
 		$this->expectException(UnserializationFailedException::class);
-		$unserializedM = SerializationUtils::strictObjUnserialize($str, SerializableObjPropMock::class);
+		$unserializedM = SerializationUtils::strictUnserialize($str, SerializableObjPropMock::class);
 	}
 
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjSerializeScalar() {
+
+		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
+		$this->assertSame('holeradio', SerializationUtils::strictUnserialize($ser, 'string'));
+
+		$ser = SerializationUtils::strictSerialize(3, 'int');
+		$this->assertSame(3, SerializationUtils::strictUnserialize($ser, 'int'));
+
+		$ser = SerializationUtils::strictSerialize(1.0, 'float');
+		$this->assertSame(1.0, SerializationUtils::strictUnserialize($ser, 'float'));
+	}
+
+	function testStrictObjSerializeWrongScalarType() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/must be of type int, string given/');
+		$ser = SerializationUtils::strictSerialize('holeradio', 'int');
+	}
+
+	function testStrictObjSerializeWrongScalar() {
+		$this->expectException(TypeNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
+		$ser = SerializationUtils::checkedStrictSerialize([], 'array');
+	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjUnserializeWrongScalarType() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessageMatches('/Unserialized string must be of type int/');
+		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
+		SerializationUtils::strictUnserialize($ser, 'int');
+	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictObjUnserializeWrongScalar() {
+		$this->expectException(TypeNotSupportedForSerializationException::class);
+		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
+		$ser = SerializationUtils::checkedStrictUnserialize(serialize('[]'), 'array');
+	}
 }

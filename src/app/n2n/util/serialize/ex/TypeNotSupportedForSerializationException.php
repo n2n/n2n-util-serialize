@@ -15,6 +15,6 @@
  */
 namespace n2n\util\serialize\ex;
 
-class ClassNotSupportedForSerializationException extends \Exception {
+class TypeNotSupportedForSerializationException extends \Exception {
 
 }

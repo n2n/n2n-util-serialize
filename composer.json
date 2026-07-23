@@ -1,7 +1,7 @@
 {
     "name": "n2n/n2n-util-serialize",
     "type": "library",
-    "description": "Safely serialize and unserialize plain data objects using PHP's native serialize()/unserialize() with an allowed_classes allowlist derived from the class structure, preventing object-injection and POP-chain attacks.",
+    "description": "Safely serialize and unserialize plain data objects (PHP native serialize()/unserialize() with an allowed_classes allowlist derived from the class structure) and scalar/null values (JSON), preventing object-injection and POP-chain attacks.",
     "keywords": [
         "n2n",
         "serialize",
@@ -9,7 +9,9 @@
         "security",
         "allowed-classes",
         "deserialization",
-        "pop-chain"
+        "pop-chain",
+        "json",
+        "enum"
     ],
     "homepage": "https://n2n.rocks/",
     "license": "LGPL-3.0-or-later",
@@ -26,11 +28,11 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
+        "php": ">=8.4",
         "n2n/n2n-spec-valobj": "~1.0.0",
         "n2n/n2n-util": "~7.5.0"
     },
     "require-dev": {
-        "php": ">=8.4",
         "n2n/n2n-test": "~7.5.0",
         "phpunit/phpunit": "^9.6.26"
     },
