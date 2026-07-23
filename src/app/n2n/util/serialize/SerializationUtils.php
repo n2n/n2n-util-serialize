@@ -256,7 +256,7 @@ class SerializationUtils {
 			}
 
 			if (!TypeName::isValueA($result, $typeName)) {
-				throw new \InvalidArgumentException('Unserialized string must be of type ' . $typeName
+				throw new UnserializationFailedException('Unserialized string must be of type ' . $typeName
 						. '. Given: ' . TypeUtils::getTypeInfo($result));
 			}
 

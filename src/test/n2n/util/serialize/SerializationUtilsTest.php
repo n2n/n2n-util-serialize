@@ -90,7 +90,7 @@ class SerializationUtilsTest extends TestCase {
 	 * @throws UnserializationFailedException
 	 */
 	function testStrictObjUnserializeWrongScalarType() {
-		$this->expectException(\InvalidArgumentException::class);
+		$this->expectException(UnserializationFailedException::class);
 		$this->expectExceptionMessageMatches('/Unserialized string must be of type int/');
 		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
 		SerializationUtils::strictUnserialize($ser, 'int');
