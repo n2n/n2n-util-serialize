@@ -94,6 +94,5 @@ try {
     // $restored is guaranteed to be an Invoice of the exact expected class.
 } catch (UnserializationFailedException $e) {
     // $serialized was malformed, not an object, of the wrong class,
-    // or exceeded the max depth cap.
 }
 ```
