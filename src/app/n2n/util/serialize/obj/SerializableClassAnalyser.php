@@ -20,6 +20,9 @@ use ReflectionClass;
 use n2n\util\ex\ExUtils;
 use n2n\util\type\TypeUtils;
 use n2n\util\type\TypeName;
+use n2n\util\col\TypedArray;
+use n2n\util\ex\IllegalStateException;
+use n2n\util\col\CollectionTypeUtils;
 
 /**
  * SerializableClassAnalyser provides static factory methods to create instances of serializable objects,
@@ -27,13 +30,15 @@ use n2n\util\type\TypeName;
  */
 class SerializableClassAnalyser {
 	private bool $enum;
+	private bool $customSerializationMode;
 
 	/**
 	 * @throws TypeNotSupportedForSerializationException
 	 */
 	function __construct(readonly \ReflectionClass $class, private bool $parentMode) {
-		$this->validateClass($class);
 		$this->enum = $class->isEnum();
+		$this->customSerializationMode = $this->detectValidCustomSerializationMode();
+		$this->validateClass($class);
 	}
 
 	/**
@@ -56,16 +61,22 @@ class SerializableClassAnalyser {
 					. ' not supported for serialization. Class must be final.');
 		}
 
-		if ($class->hasMethod('__sleep') || $class->hasMethod('__wakeup')
-				|| $class->hasMethod('__serialize') || $class->hasMethod('__unserialize')
-				|| $class->hasMethod('serialize') || $class->hasMethod('unserialize')
-				|| $class->hasMethod('__destruct')
-				|| $class->hasMethod('__set') || $class->hasMethod('__get')) {
+		$disallowedMethodNames = ['__sleep', '__wakeup', 'serialize', 'unserialize', '__destruct', '__set', '__get'];
+		if (!$this->customSerializationMode) {
+			$disallowedMethodNames[] = '__serialize';
+			$disallowedMethodNames[] = '__unserialize';
+		}
+
+		foreach ($disallowedMethodNames as $disallowedMethodName) {
+			if (!$class->hasMethod($disallowedMethodName)
+					|| $class->getMethod($disallowedMethodName)->getDeclaringClass()->getName() !== $class->getName()) {
+				continue;
+			}
+
 			throw new TypeNotSupportedForSerializationException($class->getName()
 					. ' not supported for serialization. Class must not contain any method which could affect the'
 					. ' serialization/unserialzation process like:'
-					. ' __sleep(), __wakeup(), __serialize(), __unserialize(), serialize(), unserialize(), __destruct()'
-					. ', __set(), __get()');
+					. implode(', ', array_map(fn (string $m) => $m . '()', $disallowedMethodNames)));
 		}
 	}
 
@@ -87,8 +98,14 @@ class SerializableClassAnalyser {
 			return;
 		}
 
+		if ($this->customSerializationMode) {
+			$this->extractAllowedClassNamesForCustomSerialization($collection);
+			return;
+		}
+
 		if (false !== ($parentClass = $this->class->getParentClass())) {
-			(new SerializableClassAnalyser($parentClass, true))->determineAllowedClassNames($collection);
+			(new SerializableClassAnalyser($parentClass, true))
+					->determineAllowedClassNames($collection);
 		}
 
 		foreach ($this->class->getProperties() as $property) {
@@ -96,12 +113,12 @@ class SerializableClassAnalyser {
 
 			try {
 				if ($type instanceof \ReflectionNamedType) {
-					$this->extractAllowedClassNamesFromNamedType($property, $type, $collection);
+					$this->extractAllowedClassNamesFromTypeName($type->getName(), $collection);
 					continue;
 				}
 				if ($type instanceof \ReflectionUnionType) {
 					foreach ($type->getTypes() as $type) {
-						$this->extractAllowedClassNamesFromNamedType($property, $type, $collection);
+						$this->extractAllowedClassNamesFromTypeName($type->getName(), $collection);
 					}
 					continue;
 				}
@@ -115,24 +132,66 @@ class SerializableClassAnalyser {
 		}
 	}
 
+//	/**
+//	 * @throws TypeNotSupportedForSerializationException
+//	 */
+//	private function extractAllowedClassNamesFromNamedType(\ReflectionProperty $property, \ReflectionNamedType $type,
+//			AllowedClassNameCollection $collection): void {
+//		$typeName = $type->getName();
+//		if (TypeName::isScalar($typeName) || TypeName::NULL === $typeName) {
+//			return;
+//		}
+//
+//		if ($type->isBuiltin()) {
+//			throw new TypeNotSupportedForSerializationException('Type is not supported for serialization '
+//					. $type->getName());
+//		}
+//
+//		if (!$collection->contains($typeName)) {
+//			self::createFromClass($typeName)->determineAllowedClassNames($collection);
+//		}
+//	}
+
 	/**
 	 * @throws TypeNotSupportedForSerializationException
 	 */
-	private function extractAllowedClassNamesFromNamedType(\ReflectionProperty $property, \ReflectionNamedType $type,
-			AllowedClassNameCollection $collection): void {
-		$typeName = $type->getName();
+	private function extractAllowedClassNamesFromTypeName(string $typeName, AllowedClassNameCollection $collection): void {
 		if (TypeName::isScalar($typeName) || TypeName::NULL === $typeName) {
 			return;
 		}
 
-		if ($type->isBuiltin()) {
+		if (TypeName::isBuiltin($typeName)) {
 			throw new TypeNotSupportedForSerializationException('Type is not supported for serialization '
-					. $type->getName());
+					. $typeName);
 		}
 
 		if (!$collection->contains($typeName)) {
 			self::createFromClass($typeName)->determineAllowedClassNames($collection);
 		}
+	}
+
+
+	/**
+	 * @throws TypeNotSupportedForSerializationException
+	 */
+	private function extractAllowedClassNamesForCustomSerialization(AllowedClassNameCollection $collection): void {
+		IllegalStateException::assertTrue($this->customSerializationMode);
+
+		if ($this->class->isSubclassOf(TypedArray::class)) {
+			foreach (CollectionTypeUtils::detectKeyTypeConstraint($this->class)->getNamedTypeConstraints()
+					 as $namedTypeConstraint) {
+				$this->extractAllowedClassNamesFromTypeName($namedTypeConstraint->getTypeName(), $collection);
+			}
+
+			foreach (CollectionTypeUtils::detectValueTypeConstraint($this->class)->getNamedTypeConstraints()
+			         as $namedTypeConstraint) {
+				$this->extractAllowedClassNamesFromTypeName($namedTypeConstraint->getTypeName(), $collection);
+			}
+		}
+	}
+
+	private function detectValidCustomSerializationMode(): bool {
+		return $this->class->getName() === TypedArray::class || $this->class->isSubclassOf(TypedArray::class);
 	}
 
 	/**

@@ -15,13 +15,15 @@
  */
 namespace n2n\util\serialize\mock;
 
-final class SerializableTypedArrayPropMock {
+use n2n\util\col\attribute\ValueType;
+use n2n\util\col\TypedArray;
 
-	public SerializableTypedArrayMock $typedArrayProp;
+#[ValueType(SerializableScalarPropMock::class)]
+final class SerializableTypedArrayMock extends TypedArray {
 
-	static function create(): SerializableTypedArrayPropMock {
-		$m = new SerializableTypedArrayPropMock();
-		$m->typedArrayProp = SerializableTypedArrayMock::create();
+	static function create(): SerializableTypedArrayMock {
+		$m = new SerializableTypedArrayMock();
+		$m[0] = SerializableScalarPropMock::create();
 		return $m;
 	}
 }
