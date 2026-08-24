@@ -192,9 +192,9 @@ class SerializationUtils {
 		$analyzer = SerializableClassAnalyser::createFromClass($typeName);
 		$analyzer->determineAllowedClassNames(new AllowedClassNameCollection());
 
-		if ($analyzer->class->getName() !== get_class($data)) {
+		if (!is_object($data) || $analyzer->class->getName() !== get_class($data)) {
 			throw new \InvalidArgumentException('Passed object must be exact type ' . $typeName
-					. '. Given: ' . get_class($data));
+					. '. Given: ' . TypeUtils::getTypeInfo($data));
 		}
 
 		return serialize($data);

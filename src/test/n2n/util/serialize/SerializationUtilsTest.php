@@ -20,6 +20,8 @@ use n2n\util\serialize\mock\SerializableScalarPropMock;
 use n2n\util\serialize\ex\UnserializationFailedException;
 use n2n\util\serialize\mock\SerializableObjPropMock;
 use n2n\util\serialize\ex\TypeNotSupportedForSerializationException;
+use n2n\util\serialize\mock\SerializableTypedArrayMock;
+use n2n\util\serialize\mock\SerializableTypedArrayPropMock;
 
 class SerializationUtilsTest extends TestCase {
 
@@ -28,7 +30,7 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjSerialize() {
+	function testStrictSerialize() {
 		$m = SerializableScalarPropMock::create();
 
 		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
@@ -40,7 +42,7 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjSerializeWrongType() {
+	function testStrictSerializeWrongType() {
 		$m = SerializableScalarPropMock::create();
 		$str = SerializationUtils::strictSerialize($m, SerializableScalarPropMock::class);
 
@@ -52,7 +54,7 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjSerializeConflictingPropType() {
+	function testStrictSerializeConflictingPropType() {
 		$str = 'O:47:"n2n\util\serialize\mock\SerializableObjPropMock":1:{s:7:"objProp";s:3:"hck";}';
 
 		$this->expectException(UnserializationFailedException::class);
@@ -62,7 +64,7 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjSerializeScalar() {
+	function testStrictSerializeScalar() {
 
 		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
 		$this->assertSame('holeradio', SerializationUtils::strictUnserialize($ser, 'string'));
@@ -74,13 +76,13 @@ class SerializationUtilsTest extends TestCase {
 		$this->assertSame(1.0, SerializationUtils::strictUnserialize($ser, 'float'));
 	}
 
-	function testStrictObjSerializeWrongScalarType() {
+	function testStrictSerializeWrongScalarType() {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/must be of type int, string given/');
 		$ser = SerializationUtils::strictSerialize('holeradio', 'int');
 	}
 
-	function testStrictObjSerializeWrongScalar() {
+	function testStrictSerializeWrongScalar() {
 		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
 		$ser = SerializationUtils::checkedStrictSerialize([], 'array');
@@ -89,7 +91,7 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjUnserializeWrongScalarType() {
+	function testStrictUnserializeWrongScalarType() {
 		$this->expectException(UnserializationFailedException::class);
 		$this->expectExceptionMessageMatches('/Unserialized string must be of type int/');
 		$ser = SerializationUtils::strictSerialize('holeradio', 'string');
@@ -99,9 +101,28 @@ class SerializationUtilsTest extends TestCase {
 	/**
 	 * @throws UnserializationFailedException
 	 */
-	function testStrictObjUnserializeWrongScalar() {
+	function testStrictUnserializeWrongScalar() {
 		$this->expectException(TypeNotSupportedForSerializationException::class);
 		$this->expectExceptionMessageMatches('/Type not supported for serialization: array/');
 		$ser = SerializationUtils::checkedStrictUnserialize(serialize('[]'), 'array');
 	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictSerializeTypedArrayProp() {
+		$m = SerializableTypedArrayPropMock::create();
+		$ser = SerializationUtils::strictSerialize($m, SerializableTypedArrayPropMock::class);
+		$this->assertEquals($m, SerializationUtils::strictUnserialize($ser, SerializableTypedArrayPropMock::class));
+	}
+
+	/**
+	 * @throws UnserializationFailedException
+	 */
+	function testStrictSerializeTypedArray() {
+		$m = SerializableTypedArrayMock::create();
+		$ser = SerializationUtils::strictSerialize($m, SerializableTypedArrayMock::class);
+		$this->assertEquals($m, SerializationUtils::strictUnserialize($ser, SerializableTypedArrayMock::class));
+	}
+
 }
