@@ -18,6 +18,7 @@ namespace n2n\util\serialize\mock;
 final class SerializableVirtualPropMock {
 
 	private string $prop = 'holeradio';
+	private SerializableScalarPropMock $prop2;
 
 	public SerializableScalarPropMock $virtualProp {
 		get => SerializableScalarPropMock::create();
@@ -25,6 +26,20 @@ final class SerializableVirtualPropMock {
 
 	public mixed $virtualProp2 {
 		get => $this->prop;
+	}
+
+	public UnserializableArrayPropMock $virtualProp3 {
+		get {
+			$mock = UnserializableArrayPropMock::create();
+			$mock->arrayProp = [$this->prop2];
+			return $mock;
+		}
+	}
+
+	public static function create(): SerializableScalarPropMock {
+		$m = new SerializableScalarPropMock();
+		$m->prop2 = SerializableScalarPropMock::create();
+		return $m;
 	}
 }
 

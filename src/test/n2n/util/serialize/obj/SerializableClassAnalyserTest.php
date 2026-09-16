@@ -172,7 +172,7 @@ class SerializableClassAnalyserTest extends TestCase {
 		$collection = new AllowedClassNameCollection();
 		SerializableClassAnalyser::createFromClass(SerializableVirtualPropMock::class)
 				->determineAllowedClassNames($collection);
-		$this->assertSame([SerializableVirtualPropMock::class], $collection->toArray());
+		$this->assertSame([SerializableVirtualPropMock::class, SerializableScalarPropMock::class], $collection->toArray());
 	}
 
 }
