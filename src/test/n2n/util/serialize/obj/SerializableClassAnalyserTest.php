@@ -30,6 +30,7 @@ use n2n\util\serialize\mock\UnserializableIntersectionPropMock;
 use n2n\util\serialize\mock\SerializableEnumPropMock;
 use n2n\util\serialize\mock\SerializableEnumMock;
 use n2n\util\serialize\mock\SerializableRecursivePropMock;
+use n2n\util\serialize\mock\SerializableVirtualPropMock;
 
 class SerializableClassAnalyserTest extends TestCase {
 
@@ -164,5 +165,14 @@ class SerializableClassAnalyserTest extends TestCase {
 		$this->assertSame([SerializableRecursivePropMock::class], $collection->toArray());
 	}
 
+	/**
+	 * @throws TypeNotSupportedForSerializationException
+	 */
+	function testVirtualSerializable(): void {
+		$collection = new AllowedClassNameCollection();
+		SerializableClassAnalyser::createFromClass(SerializableVirtualPropMock::class)
+				->determineAllowedClassNames($collection);
+		$this->assertSame([SerializableVirtualPropMock::class, SerializableScalarPropMock::class], $collection->toArray());
+	}
 
 }
