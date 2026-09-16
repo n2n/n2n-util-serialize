@@ -109,6 +109,10 @@ class SerializableClassAnalyser {
 		}
 
 		foreach ($this->class->getProperties() as $property) {
+			if ($property->isVirtual()) {
+				continue;
+			}
+
 			$type = $property->getType();
 
 			try {
